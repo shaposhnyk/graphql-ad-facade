@@ -24,8 +24,8 @@ class Application {
 
     fun automaticSchema(ldap: LdapTemplate): GraphQLSchema {
         log.info("Building automatic schema from cn=schema,cn=configuration")
-        val person: EntityFactory = LdapSchemaEntityFactory(ldap, "ou=people,dc=shaposhnyk,dc=com",
-                ldapClassName = "inetOrgPerson", graphName = "person")
+        val person: EntityFactory = LdapSchemaSimpleFiltersEntityFactory(ldap, "ou=people,dc=shaposhnyk,dc=com",
+                ldapClassName = "organizationalPerson", graphName = "person")
         val room: EntityFactory = LdapSchemaEntityFactory(ldap, "ou=rooms,dc=shaposhnyk,dc=com", "meetingRoom")
         val group: EntityFactory = LdapSchemaEntityFactory(ldap, "ou=groups,dc=shaposhnyk,dc=com", "group")
 
@@ -43,7 +43,7 @@ class Application {
                         group.objectDefinition())
                 )
         log.info("Schema built")
-        return schema;
+        return schema
     }
 
     companion object {

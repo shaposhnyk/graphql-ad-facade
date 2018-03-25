@@ -1,0 +1,233 @@
+################################################
+# Hierarchy
+################################################
+
+dn: dc=shaposhnyk,dc=com
+objectclass: top
+objectclass: domain
+objectclass: extensibleObject
+dc: shaposhnyk
+
+# Organizational Units
+dn: ou=groups,dc=shaposhnyk,dc=com
+objectclass: top
+objectclass: organizationalUnit
+ou: groups
+
+dn: ou=people,dc=shaposhnyk,dc=com
+objectclass: top
+objectclass: organizationalUnit
+ou: people
+
+dn: ou=rooms,dc=shaposhnyk,dc=com
+objectclass: top
+objectclass: organizationalUnit
+ou: rooms
+
+# Schema
+dn: cn=Configuration,dc=shaposhnyk,dc=com
+objectclass: top
+objectclass: extensibleObject
+cn: Configuration
+
+dn: cn=Schema,cn=Configuration,dc=shaposhnyk,dc=com
+objectclass: top
+objectclass: extensibleObject
+cn: Schema
+
+
+################################################
+# AD Like Schema
+################################################
+dn: cn=inetOrgPerson,cn=Schema,cn=Configuration,dc=shaposhnyk,dc=com
+governsID: 1.3.6.1.4.1.42.2.27.5.2.15
+cn: inetOrgPerson
+lDAPDisplayName: inetOrgPerson
+adminDescription: Person of inet organization
+mayContain: jpegPhoto
+mayContain: title
+objectClass: classSchema
+objectClassCategory: 3
+subClassOf: organizationalPerson
+
+dn: cn=organizationalPerson,cn=Schema,cn=Configuration,dc=shaposhnyk,dc=com
+governsID: 1.3.6.1.4.1.42.2.27.5.2.15
+cn: organizationalPerson
+lDAPDisplayName: organizationalPerson
+adminDescription: Person of organization
+mustContain: uid
+mustContain: joinedYear
+mayContain: isManager
+objectClass: classSchema
+objectClassCategory: 3
+subClassOf: person
+
+dn: cn=meetingRoom,cn=Schema,cn=Configuration,dc=shaposhnyk,dc=com
+governsID: 1.3.6.1.4.1.42.2.27.5.2.15
+cn: meetingRoom
+lDAPDisplayName: meetingRoom
+adminDescription: Meeting Room
+mustContain: cn
+objectClass: classSchema
+objectClassCategory: 3
+subClassOf: top
+
+dn: cn=group,cn=Schema,cn=Configuration,dc=shaposhnyk,dc=com
+governsID: 1.3.6.1.4.1.42.2.27.5.2.15
+cn: group
+lDAPDisplayName: group
+adminDescription: LDAP Group
+mustContain: cn
+mayContain: ou
+objectClass: classSchema
+objectClassCategory: 3
+subClassOf: top
+
+################################################
+
+# boolean
+dn: CN=isManager,cn=Schema,cn=Configuration,dc=shaposhnyk,dc=com
+attributeSyntax: 2.5.5.8
+isSingleValued: TRUE
+searchFlags: 1
+lDAPDisplayName: isManager
+adminDescription: true if person is on managerial position
+objectClass: attributeSchema
+oMSyntax: 27
+
+# interger
+dn: CN=joinedYear,cn=Schema,cn=Configuration,dc=shaposhnyk,dc=com
+attributeSyntax: 2.5.5.9
+isSingleValued: TRUE
+searchFlags: 1
+lDAPDisplayName: joinedYear
+adminDescription: Year user joined to the company
+objectClass: attributeSchema
+oMSyntax: 27
+
+# string unicode
+dn: CN=uid,cn=Schema,cn=Configuration,dc=shaposhnyk,dc=com
+attributeSyntax: 2.5.5.12
+isSingleValued: TRUE
+searchFlags: 1
+lDAPDisplayName: uID
+adminDescription: unique user identifier
+objectClass: attributeSchema
+oMSyntax: 27
+
+dn: CN=sn,cn=Schema,cn=Configuration,dc=shaposhnyk,dc=com
+attributeSyntax: 2.5.5.12
+isSingleValued: TRUE
+searchFlags: 1
+lDAPDisplayName: sn
+adminDescription: first name
+objectClass: attributeSchema
+oMSyntax: 27
+
+dn: CN=title,cn=Schema,cn=Configuration,dc=shaposhnyk,dc=com
+attributeSyntax: 2.5.5.12
+isSingleValued: TRUE
+searchFlags: 1
+lDAPDisplayName: title
+adminDescription: person's title
+objectClass: attributeSchema
+oMSyntax: 27
+
+dn: CN=projectLabel,cn=Schema,cn=Configuration,dc=shaposhnyk,dc=com
+attributeSyntax: 2.5.5.12
+isSingleValued: FALSE
+searchFlags: 1
+lDAPDisplayName: projectLabel
+adminDescription: projects person participated
+objectClass: attributeSchema
+oMSyntax: 27
+
+# binary
+dn: CN=jpegPhoto,cn=Schema,cn=Configuration,dc=shaposhnyk,dc=com
+attributeSyntax: 2.5.5.10
+isSingleValued: FALSE
+searchFlags: 1
+lDAPDisplayName: jpegPhoto
+adminDescription: Users photo
+objectClass: attributeSchema
+oMSyntax: 27
+
+################################################
+# Create People
+################################################
+dn: uid=john,ou=people,dc=shaposhnyk,dc=com
+objectclass: top
+objectclass: person
+objectclass: organizationalPerson
+objectclass: inetOrgPerson
+cn: John Doe
+sn: John
+uid: john
+password: secret
+memberOf: cn=developers,ou=groups,dc=shaposhnyk,dc=com
+
+dn: uid=jihn,ou=people,dc=shaposhnyk,dc=com
+objectclass: top
+objectclass: person
+objectclass: organizationalPerson
+objectclass: inetOrgPerson
+cn: Jihn Die
+sn: Jihn
+uid: jihn
+password: secret
+memberOf: cn=developers,ou=groups,dc=shaposhnyk,dc=com
+memberOf: cn=managers,ou=groups,dc=shaposhnyk,dc=com
+
+dn: uid=jahn,ou=people,dc=shaposhnyk,dc=com
+objectclass: top
+objectclass: person
+objectclass: organizationalPerson
+objectclass: inetOrgPerson
+isManager: TRUE
+cn: Jahn Dae
+sn: Jahn
+uid: jahn
+password: secret
+joinedYear: 2015
+memberOf: cn=developers,ou=groups,dc=shaposhnyk,dc=com
+memberOf: cn=managers,ou=groups,dc=shaposhnyk,dc=com
+
+dn: uid=chahn,ou=people,dc=shaposhnyk,dc=com
+objectclass: top
+objectclass: person
+objectclass: organizationalPerson
+objectclass: inetOrgPerson
+cn: Chahn Dae
+sn: Chahn
+uid: chahn
+password: secret
+joinedYear: 2010
+memberOf: cn=ninjas,cn=developers,ou=groups,dc=shaposhnyk,dc=com
+
+################################################
+# Create Groups
+################################################
+dn: cn=developers,ou=groups,dc=shaposhnyk,dc=com
+objectclass: top
+objectclass: groupOfUniqueNames
+cn: developers
+ou: developer
+member: uid=john,ou=people,dc=shaposhnyk,dc=com
+member: uid=jihn,ou=people,dc=shaposhnyk,dc=com
+member: cn=ninjas,cn=developers,ou=groups,dc=shaposhnyk,dc=com
+
+# SubGroup
+dn: cn=ninjas,cn=developers,ou=groups,dc=shaposhnyk,dc=com
+objectclass: top
+objectclass: groupOfUniqueNames
+cn: developers
+ou: developer
+member: uid=chahn,ou=people,dc=shaposhnyk,dc=com
+
+dn: cn=managers,ou=groups,dc=shaposhnyk,dc=com
+objectclass: top
+objectclass: groupOfUniqueNames
+cn: managers
+ou: manager
+member: uid=jahn,ou=people,dc=shaposhnyk,dc=com
+member: uid=jihn,ou=people,dc=shaposhnyk,dc=com
