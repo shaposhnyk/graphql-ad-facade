@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: graphql-ad-facade
+
+  ldap:
+    embedded:
+      base-dn: dc=shaposhnyk,dc=com
+      credential:
+        username: uid=admin
+        password: secret
+      ldif: classpath:schema.ldif
+      port: 0
+      validation:
+        enabled: false
+
+server:
+  port: 9000
+
+graphql:
+  servlet:
+    mapping: /graphql
+    enabled: true
+    corsEnabled: true
+
+graphiql:
+  mapping: /graphiql
+  endpoint: /graphql
+  enabled: true
+  pageTitle: GraphiQL
