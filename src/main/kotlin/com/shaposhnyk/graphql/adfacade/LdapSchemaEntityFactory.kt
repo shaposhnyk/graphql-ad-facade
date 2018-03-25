@@ -16,11 +16,11 @@ data class SchemaParameters(val attrName: String = "LDAPDisplayName",
                             val stringTypes: List<String> = listOf("2.5.5.12", "2.5.5.6"),
                             val ignoreAttributesLdapFilter: String = "")
 
-class LdapSchemaEntityFactory(val ldap: LdapTemplate,
-                              val base: String,
-                              val ldapClassName: String,
-                              val graphName: String = ldapClassName,
-                              val config: SchemaParameters = defaultParams) : EntityFactory {
+open class LdapSchemaEntityFactory(val ldap: LdapTemplate,
+                                   val base: String,
+                                   val ldapClassName: String,
+                                   val graphName: String = ldapClassName,
+                                   val config: SchemaParameters = defaultParams) : EntityFactory {
 
     override fun listFetcher(): (DataFetchingEnvironment) -> Any {
         return { env ->
@@ -59,22 +59,22 @@ class LdapSchemaEntityFactory(val ldap: LdapTemplate,
                         .description(config.dnDescription))
 
         // find class' attribute definitions and add them
-        val attrs = findFieldDefinitions(builder, classInfo)
+        val attrs = findFieldDefinitions(classInfo)
         attrs.forEach { builder.field(it) }
 
-        log.info("Built '${graphName}' object schema of ${attrs.size} fields")
+        log.info("Built '$graphName' object schema of ${attrs.size} fields")
         return builder.build()
     }
 
     /**
      * Find all field definitions for class and all its descendants
      */
-    private fun findFieldDefinitions(builder: GraphQLObjectType.Builder, info: LdapDataEntry): MutableSet<GraphQLFieldDefinition.Builder> {
+    fun findFieldDefinitions(info: LdapDataEntry): MutableSet<GraphQLFieldDefinition.Builder> {
         val fields = findClassFieldDefinitions(info).toMutableSet()
 
         val subClassInfo = findClassSchema(info.getStringAttribute("subClassOf"))
         if (subClassInfo != null) {
-            fields.union(findFieldDefinitions(builder, subClassInfo))
+            fields.addAll(findFieldDefinitions(subClassInfo))
         }
         return fields
     }
@@ -147,7 +147,7 @@ class LdapSchemaEntityFactory(val ldap: LdapTemplate,
                 LdapQueryBuilder.query()
                         .base("cn=Schema,cn=Configuration,dc=" + base.substringAfter(",dc="))
                         .where("cn").`is`(className)
-                        .and("objectClass").`is`("attributeSchema")
+                        .and("objectClass").`is`("classSchema")
                 , ldapMapper
         )
         if (res.size > 1) {
