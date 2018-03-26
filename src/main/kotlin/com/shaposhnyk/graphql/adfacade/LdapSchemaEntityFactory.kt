@@ -59,7 +59,9 @@ open class LdapSchemaEntityFactory(val ldap: LdapTemplate,
                         .description(config.dnDescription))
 
         // find class' attribute definitions and add them
-        val attrs = findFieldDefinitions(classInfo)
+        val attrs = findFieldDefinitions(classInfo, mutableListOf(ldapClassName.toLowerCase()))
+                .map { it.build() }
+                .distinctBy { it.name }
         attrs.forEach { builder.field(it) }
 
         log.info("Built '$graphName' object schema of ${attrs.size} fields")
@@ -69,12 +71,18 @@ open class LdapSchemaEntityFactory(val ldap: LdapTemplate,
     /**
      * Find all field definitions for class and all its descendants
      */
-    fun findFieldDefinitions(info: LdapDataEntry): MutableSet<GraphQLFieldDefinition.Builder> {
-        val fields = findClassFieldDefinitions(info).toMutableSet()
+    fun findFieldDefinitions(info: LdapDataEntry, visitedClasses: MutableList<String>): MutableList<GraphQLFieldDefinition.Builder> {
+        val fields = findClassFieldDefinitions(info).toMutableList()
+        log.debug("Found {} fields on {}", fields.size, info.getStringAttribute("cn"))
 
-        val subClassInfo = findClassSchema(info.getStringAttribute("subClassOf"))
+        val subClassName = info.getStringAttribute("subClassOf")
+        if (visitedClasses.contains(subClassName.toLowerCase())) {
+            return fields
+        }
+        val subClassInfo = findClassSchema(subClassName)
         if (subClassInfo != null) {
-            fields.addAll(findFieldDefinitions(subClassInfo))
+            visitedClasses.add(subClassName.toLowerCase())
+            fields.addAll(findFieldDefinitions(subClassInfo, visitedClasses))
         }
         return fields
     }
