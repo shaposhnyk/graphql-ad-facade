@@ -22,12 +22,17 @@ class LdapSchemaSimpleFiltersEntityFactory(
                     .map { (it as LdapFilterArgument).createFilter(env) }
                     .toList()
 
-            ldap.search(LdapQueryBuilder.query()
-                    .base(base)
-                    .attributes(*selectedAttributes)
-                    .countLimit(env.arguments["limit"] as Int)
-                    .where("objectClass").`is`(ldapClassName)
-                    , ldapMapper)
+            var rootFilter = AndFilter()
+            rootFilter.and(EqualsFilter("objectClass", ldapClassName))
+            filters.forEach { rootFilter.and(it) }
+
+            val searchControls = SearchControls()
+            searchControls.countLimit = (env.arguments["limit"] as Int).toLong()
+            searchControls.returningAttributes = selectedAttributes
+            searchControls.searchScope = SearchControls.SUBTREE_SCOPE
+
+            log.debug("Searching for {} from {}", rootFilter.encode(), base)
+            ldap.search(base, rootFilter.encode(), searchControls, ldapMapper)
         }
     }
 
