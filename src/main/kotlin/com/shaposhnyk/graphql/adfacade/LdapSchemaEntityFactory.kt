@@ -13,7 +13,7 @@ data class SchemaParameters(val attrName: String = "LDAPDisplayName",
                             val attrDescription: String = "adminDescription",
                             val dnNameInGraph: String = "dn",
                             val dnDescription: String = "Directory Node",
-                            val stringTypes: List<String> = listOf("2.5.5.12", "2.5.5.6"),
+                            val stringTypes: List<String> = listOf("2.5.5.12", "2.5.5.6", "2.5.5.1"),
                             val ignoreAttributesLdapFilter: String = "")
 
 open class LdapSchemaEntityFactory(val ldap: LdapTemplate,
@@ -21,6 +21,14 @@ open class LdapSchemaEntityFactory(val ldap: LdapTemplate,
                                    val ldapClassName: String,
                                    val graphName: String = ldapClassName,
                                    val config: SchemaParameters = defaultParams) : EntityFactory {
+
+    private val classCache = SimpleCache({ className: String ->
+        log.info("Searching class info: {}", className)
+        ldap.search(LdapQueryBuilder.query()
+                .base("cn=Schema,cn=Configuration,dc=" + base.substringAfter(",dc="))
+                .where("cn").`is`(className)
+                , ldapMapper)
+    })
 
     override fun listFetcher(): (DataFetchingEnvironment) -> Any {
         return { env ->
@@ -46,7 +54,7 @@ open class LdapSchemaEntityFactory(val ldap: LdapTemplate,
     }
 
     override fun objectDefinition(): GraphQLObjectType {
-        val classInfo: LdapDataEntry = findClassSchema(ldapClassName) ?: throw IllegalArgumentException("Root class ${ldapClassName} not be found")
+        val classInfo: LdapDataEntry = findClassSchema(ldapClassName) ?: throw IllegalArgumentException("Root class ${ldapClassName} cannot be found")
 
         // create base object with DN field
         val builder = GraphQLObjectType.newObject()
@@ -58,51 +66,79 @@ open class LdapSchemaEntityFactory(val ldap: LdapTemplate,
                         .dataFetcher { it.getSource<LdapDataEntry>().dn.toString() }
                         .description(config.dnDescription))
 
-        // find class' attribute definitions and add them
-        val attrs = findFieldDefinitions(classInfo, mutableListOf(ldapClassName.toLowerCase()))
-                .map { it.build() }
-                .distinctBy { it.name }
-        attrs.forEach { builder.field(it) }
+        // set of all attributeSchemas of all subClasses of current class
+        val attrNames = findAttrSchemaForAClass(classInfo)
 
-        log.info("Built '$graphName' object schema of ${attrs.size} fields")
+        // transform LDAP attributeSchema into GraphQLFieldDefinition
+        findAttributeSchemas(attrNames)
+                .flatMap { createFieldDefinition(it) }
+                .filter { it != null }
+                .forEach { builder.field(it.build()) }
+
+        log.info("Built '$graphName' GraphQL object schema of ${attrNames.size} fields")
         return builder.build()
     }
 
-    /**
-     * Find all field definitions for class and all its descendants
-     */
-    fun findFieldDefinitions(info: LdapDataEntry, visitedClasses: MutableList<String>): MutableList<GraphQLFieldDefinition.Builder> {
-        val fields = findClassFieldDefinitions(info).toMutableList()
-        log.debug("Found {} fields on {}", fields.size, info.getStringAttribute("cn"))
+    fun findAttrSchemaForAClass(classInfo: LdapDataEntry): List<String> {
+        val classNames = mutableSetOf<String>(classInfo.getStringAttribute("cn").toLowerCase())
+        return findAttrSchemaForAClass(classInfo, classNames)
+    }
 
-        val subClassName = info.getStringAttribute("subClassOf")
-        if (visitedClasses.contains(subClassName.toLowerCase())) {
-            return fields
+    fun findAttrSchemaForAClass(classInfo: LdapDataEntry, classNames: MutableSet<String>): List<String> {
+        var subClassInfos = listOf("subClassOf", "possSuperiors", "auxiliaryClass", "systemPossSuperiors", "systemAuxiliaryClass")
+                .map { subClassAttr -> classInfo.getStringAttributes(subClassAttr) }
+                .filter { it != null }
+                .flatMap { it.toList().union(listOf("rFC822LocalPart")) }
+                .filter { className -> !classNames.contains(className.toLowerCase()) } // only new classes
+                .map { className -> findClassSchema(className) }
+                .filterIsInstance<LdapDataEntry>()
+                .toList()
+
+        if (subClassInfos.isEmpty()) {
+            return getMergedAttributeValues(classInfo)
         }
-        val subClassInfo = findClassSchema(subClassName)
-        if (subClassInfo != null) {
-            visitedClasses.add(subClassName.toLowerCase())
-            fields.addAll(findFieldDefinitions(subClassInfo, visitedClasses))
+
+        for (subInfo in subClassInfos) { // side effect
+            classNames.add(subInfo.getStringAttribute("cn").toLowerCase())
         }
-        return fields
+
+        val subClassesAttrList = subClassInfos
+                .flatMap { info -> getMergedAttributeValues(info) }
+                .sorted()
+                .distinct()
+                .toList()
+
+        val recursiveAttrList = subClassInfos
+                .flatMap { findAttrSchemaForAClass(it, classNames) }
+
+        return subClassesAttrList
+                .union(recursiveAttrList)
+                .filter { !it.isEmpty() }
+                .filter { !it.contains("Exch") }
+                .distinct()
+                .sorted()
+    }
+
+    private fun getMergedAttributeValues(classInfo: LdapDataEntry): List<String> {
+        return listOf("mustContain", "mayContain", "systemMustContain", "systemMayContain")
+                .map { subClassAttr -> classInfo.getStringAttributes(subClassAttr) }
+                .filter { it != null }
+                .flatMap { it.toList() }
+                .distinct()
+                .toList()
     }
 
     /**
      * Find fields from given class only
      */
-    private fun findClassFieldDefinitions(info: LdapDataEntry): Set<GraphQLFieldDefinition.Builder> {
-        val ldapName = info.getStringAttribute("cn")
-        val attrNames = (info.getStringAttributes("mustContain")?.toList() ?: listOf<String>())
-                .union(info.getStringAttributes("mayContain")?.toList() ?: listOf<String>())
-
-        val attrs: List<LdapDataEntry> = findAttributeSchemas(ldapName, attrNames)
-
+    private fun createFieldDefinition(attrSchema: LdapDataEntry): Set<GraphQLFieldDefinition.Builder> {
+        val attrs = listOf(attrSchema)
         // boolean
         val bools = attrs
                 .filter { "2.5.5.8" == it.getStringAttribute("attributeSyntax") }
                 .filter { "TRUE" == it.getStringAttribute("isSingleValued") }
                 .map {
-                    val name = it.getStringAttribute("lDAPDisplayName")
+                    val name = it.getStringAttribute(config.attrName)
                     fieldDefinition(it).type(Scalars.GraphQLBoolean)
                             .dataFetcher { env -> "TRUE" == env.getSource<LdapDataEntry>().getStringAttribute(name) }
                 }
@@ -143,21 +179,16 @@ open class LdapSchemaEntityFactory(val ldap: LdapTemplate,
                 .union(lists)
     }
 
+
     fun fieldDefinition(attr: LdapDataEntry): GraphQLFieldDefinition.Builder {
         return GraphQLFieldDefinition.newFieldDefinition()
-                .name(attr.getStringAttribute(config.attrName))
+                .name(attr.getStringAttribute(config.attrName).replace(Regex("[^a-zA-Z0-9]+"), ""))
                 .description(attr.getStringAttribute(config.attrDescription))
                 .type(Scalars.GraphQLString)
     }
 
     fun findClassSchema(className: String): LdapDataEntry? {
-        val res = ldap.search(
-                LdapQueryBuilder.query()
-                        .base("cn=Schema,cn=Configuration,dc=" + base.substringAfter(",dc="))
-                        .where("cn").`is`(className)
-                        .and("objectClass").`is`("classSchema")
-                , ldapMapper
-        )
+        val res = classCache.get(className)
         if (res.size > 1) {
             throw IllegalArgumentException("Too many '${className}' objects found: ${res}")
         } else if (res.isEmpty()) {
@@ -167,13 +198,13 @@ open class LdapSchemaEntityFactory(val ldap: LdapTemplate,
         return res.first() as LdapDataEntry
     }
 
-    fun findAttributeSchemas(ldapName: String, attrNames: Set<String>): List<LdapDataEntry> {
+    fun findAttributeSchemas(attrNames: Collection<String>): List<LdapDataEntry> {
         var criteria = LdapQueryBuilder.query()
                 .base("cn=Schema,cn=Configuration,dc=" + base.substringAfter(",dc="))
-                .where("cn").`is`("cn")
+                .where("ldapDisplayName").`is`("cn")
 
         for (name in attrNames) {
-            criteria = criteria.or("cn").`is`(name)
+            criteria = criteria.or("ldapDisplayName").`is`(name)
         }
 
         return ldap.search(criteria, ldapMapper)
