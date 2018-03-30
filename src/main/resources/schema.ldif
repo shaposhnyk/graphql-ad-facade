@@ -44,7 +44,7 @@ governsID: 1.3.6.1.4.1.42.2.27.5.2.15
 cn: inetOrgPerson
 lDAPDisplayName: inetOrgPerson
 adminDescription: Person of inet organization
-mayContain: jpegPhoto
+mayContain: jpeg-Photo
 mayContain: title
 objectClass: classSchema
 objectClassCategory: 3
@@ -61,6 +61,18 @@ mayContain: isManager
 objectClass: classSchema
 objectClassCategory: 3
 subClassOf: person
+auxiliaryClass: rFC822LocalPart
+
+dn: cn=rFC822LocalPart,cn=Schema,cn=Configuration,dc=shaposhnyk,dc=com
+governsID: 1.3.6.1.4.1.42.2.27.5.2.15
+cn: rFC822LocalPart
+lDAPDisplayName: rFC822LocalPart
+adminDescription: Used to define entries that represent the local part of mail addresses.
+mayContain: cn
+mayContain: sn
+objectClass: classSchema
+objectClassCategory: 3
+subClassOf: top
 
 dn: cn=meetingRoom,cn=Schema,cn=Configuration,dc=shaposhnyk,dc=com
 governsID: 1.3.6.1.4.1.42.2.27.5.2.15
@@ -115,15 +127,6 @@ adminDescription: unique user identifier
 objectClass: attributeSchema
 oMSyntax: 27
 
-dn: CN=sn,cn=Schema,cn=Configuration,dc=shaposhnyk,dc=com
-attributeSyntax: 2.5.5.12
-isSingleValued: TRUE
-searchFlags: 1
-lDAPDisplayName: sn
-adminDescription: first name
-objectClass: attributeSchema
-oMSyntax: 27
-
 dn: CN=title,cn=Schema,cn=Configuration,dc=shaposhnyk,dc=com
 attributeSyntax: 2.5.5.12
 isSingleValued: TRUE
@@ -143,14 +146,34 @@ objectClass: attributeSchema
 oMSyntax: 27
 
 # binary
-dn: CN=jpegPhoto,cn=Schema,cn=Configuration,dc=shaposhnyk,dc=com
+dn: CN=jpeg-Photo,cn=Schema,cn=Configuration,dc=shaposhnyk,dc=com
 attributeSyntax: 2.5.5.10
 isSingleValued: FALSE
 searchFlags: 1
-lDAPDisplayName: jpegPhoto
+lDAPDisplayName: jpeg-Photo
 adminDescription: Users photo
 objectClass: attributeSchema
 oMSyntax: 27
+
+dn: CN=sn,cn=Schema,cn=Configuration,dc=shaposhnyk,dc=com
+attributeSyntax: 2.5.5.12
+isSingleValued: TRUE
+searchFlags: 1
+lDAPDisplayName: sn
+adminDescription: Surname
+objectClass: attributeSchema
+oMSyntax: 27
+
+dn: CN=cn,cn=Schema,cn=Configuration,dc=shaposhnyk,dc=com
+attributeSyntax: 2.5.5.12
+isSingleValued: TRUE
+searchFlags: 1
+lDAPDisplayName: cn
+adminDescription: Common-Name
+objectClass: attributeSchema
+oMSyntax: 27
+
+
 
 ################################################
 # Create People
