@@ -21,14 +21,19 @@ class LdapFilterArgument(
     fun createFilter(env: DataFetchingEnvironment) = ldapFilter(env)
 
     companion object {
-        fun of(ldapFilter: (DataFetchingEnvironment) -> Filter, arg: GraphQLArgument) = LdapFilterArgument(ldapFilter, arg.name, arg.description, arg.type, arg.defaultValue)
-        fun of(ldapFilter: (DataFetchingEnvironment) -> Filter, arg: GraphQLArgument.Builder) = of(ldapFilter, arg.build())
+        fun of(arg: GraphQLArgument, ldapFilter: (DataFetchingEnvironment) -> Filter) = LdapFilterArgument(ldapFilter, arg.name, arg.description, arg.type, arg.defaultValue)
+        fun of(arg: GraphQLArgument.Builder, ldapFilter: (DataFetchingEnvironment) -> Filter) = of(arg.build(), ldapFilter)
 
-        fun of(name: String, description: String?, ldapFilter: (DataFetchingEnvironment) -> Filter) = of(ldapFilter, GraphQLArgument.newArgument()
-                .name(name)
-                .description(description)
-                .type(Scalars.GraphQLString)
-                .defaultValue(null))
+        fun of(name: String, description: String?, ldapFilter: (DataFetchingEnvironment) -> Filter) = of(
+                builderOf(name, description), ldapFilter)
+
+        fun builderOf(name: String, description: String? = null): GraphQLArgument.Builder {
+            return GraphQLArgument.newArgument()
+                    .name(name)
+                    .description(description)
+                    .type(Scalars.GraphQLString)
+                    .defaultValue(null)
+        }
 
         fun ofEq(fieldName: String) = of(fieldName, "matching to ${fieldName}") { env ->
             EqualsFilter(fieldName, env.arguments[fieldName] as String)

@@ -15,7 +15,20 @@ data class ADParams(val attrName: String = "lDAPDisplayName",
                     val dnDescription: String = "Directory Node",
                     val stringTypes: List<String> = listOf("2.5.5.12", "2.5.5.6", "2.5.5.1"),
                     val attributesToIgnore: String = "",
-                    val addRfc822LocalPart: Boolean = false)
+                    val addRfc822LocalPart: Boolean = false) {
+
+    fun isString(attrSchema: LdapDataEntry): Boolean {
+        return stringTypes.contains(attrSchema.getStringAttribute("attributeSyntax"))
+    }
+
+    fun isInt(attrSchema: LdapDataEntry): Boolean {
+        return "2.5.5.9" == attrSchema.getStringAttribute("attributeSyntax")
+    }
+
+    fun isBool(attrSchema: LdapDataEntry): Boolean {
+        return "2.5.5.8" == attrSchema.getStringAttribute("attributeSyntax")
+    }
+}
 
 class ADSchemaBuilder(val ldap: LdapOperations,
                       val base: String,
@@ -83,7 +96,7 @@ class ADSchemaBuilder(val ldap: LdapOperations,
         val attrs = listOf(attrSchema)
         // boolean
         val bools = attrs
-                .filter { "2.5.5.8" == it.getStringAttribute("attributeSyntax") }
+                .filter { params.isBool(it) }
                 .filter { "TRUE" == it.getStringAttribute("isSingleValued") }
                 .map {
                     val name = it.getStringAttribute(params.attrName)
@@ -93,7 +106,7 @@ class ADSchemaBuilder(val ldap: LdapOperations,
 
         // integer
         val ints = attrs
-                .filter { "2.5.5.9" == it.getStringAttribute("attributeSyntax") }
+                .filter { params.isInt(it) }
                 .filter { "TRUE" == it.getStringAttribute("isSingleValued") }
                 .map {
                     val name = it.getStringAttribute(params.attrName)
@@ -103,7 +116,7 @@ class ADSchemaBuilder(val ldap: LdapOperations,
 
         // strings
         val strs = attrs
-                .filter { params.stringTypes.contains(it.getStringAttribute("attributeSyntax")) }
+                .filter { params.isString(it) }
                 .filter { "TRUE" == it.getStringAttribute("isSingleValued") }
                 .map {
                     val name = it.getStringAttribute(params.attrName)
@@ -113,7 +126,7 @@ class ADSchemaBuilder(val ldap: LdapOperations,
 
         // list of string
         val lists = attrs
-                .filter { params.stringTypes.contains(it.getStringAttribute("attributeSyntax")) }
+                .filter { params.isString(it) }
                 .filter { "TRUE" != it.getStringAttribute("isSingleValued") }
                 .map {
                     val name = it.getStringAttribute(params.attrName)
