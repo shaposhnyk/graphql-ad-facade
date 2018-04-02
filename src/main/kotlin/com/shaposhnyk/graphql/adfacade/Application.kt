@@ -24,10 +24,11 @@ class Application {
 
     fun automaticSchema(ldap: LdapTemplate): GraphQLSchema {
         log.info("Building automatic initialSchema from cn=initialSchema,cn=configuration")
-        val person: IEntityFactory = ADSchemaWithFiltersBuilder(ADSchemaBuilder(ldap, "ou=people,dc=shaposhnyk,dc=com",
-                ldapClassName = "organizationalPerson", graphName = "person"))
-        val room: IEntityFactory = ADSchemaBuilder(ldap, "ou=rooms,dc=shaposhnyk,dc=com", "meetingRoom")
-        val group: IEntityFactory = ADSchemaBuilder(ldap, "ou=groups,dc=shaposhnyk,dc=com", "group")
+
+        val person: IEntityFactory = ADEntityBuilder(ldap, "ou=people,dc=shaposhnyk,dc=com",
+                ldapClassName = "organizationalPerson", graphName = "person")
+        val room: IEntityFactory = ADEntityBuilder(ldap, "ou=rooms,dc=shaposhnyk,dc=com", "meetingRoom")
+        val group: IEntityFactory = ADEntityBuilder(ldap, "ou=groups,dc=shaposhnyk,dc=com", "group")
 
         val queryBuilder = GraphQLObjectType.newObject().name("Query")
                 .field(person.listFieldDefinition("searchPeople"))

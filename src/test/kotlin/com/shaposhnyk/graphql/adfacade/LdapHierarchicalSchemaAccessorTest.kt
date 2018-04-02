@@ -19,7 +19,7 @@ class LdapHierarchicalSchemaAccessorTest {
 
         override fun findAttributeSchemas(attrNames: Iterable<String>, attrName: String, attributesToIgnore: String): List<LdapDataEntry> {
             return attrNames
-                    .map { attrName -> LdapMocks.emptyEntry("cn=$attrName") }
+                    .map { attrName -> LdapMocks.emptyEntry("cn=${attrName}") }
         }
     }
 

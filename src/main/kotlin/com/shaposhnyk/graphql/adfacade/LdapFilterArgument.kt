@@ -10,7 +10,7 @@ import org.springframework.ldap.filter.LikeFilter
 import org.springframework.ldap.filter.NotFilter
 
 class LdapFilterArgument(
-        val ldapFilter: (DataFetchingEnvironment) -> Filter,
+        val ldapFilter: (DataFetchingEnvironment) -> Filter?,
         name: String,
         description: String?,
         type: GraphQLInputType,
@@ -21,11 +21,17 @@ class LdapFilterArgument(
     fun createFilter(env: DataFetchingEnvironment) = ldapFilter(env)
 
     companion object {
-        fun of(arg: GraphQLArgument, ldapFilter: (DataFetchingEnvironment) -> Filter) = LdapFilterArgument(ldapFilter, arg.name, arg.description, arg.type, arg.defaultValue)
-        fun of(arg: GraphQLArgument.Builder, ldapFilter: (DataFetchingEnvironment) -> Filter) = of(arg.build(), ldapFilter)
+        fun of(arg: GraphQLArgument, ldapFilter: (DataFetchingEnvironment) -> Filter?) =
+                LdapFilterArgument({ env ->
+                    if (env.arguments[arg.name] == null) null
+                    else ldapFilter(env)
+                }, arg.name, arg.description, arg.type, arg.defaultValue)
 
-        fun of(name: String, description: String?, ldapFilter: (DataFetchingEnvironment) -> Filter) = of(
-                builderOf(name, description), ldapFilter)
+        fun of(arg: GraphQLArgument.Builder, ldapFilter: (DataFetchingEnvironment) -> Filter?) =
+                of(arg.build(), ldapFilter)
+
+        fun of(graphName: String, description: String?, ldapFilter: (DataFetchingEnvironment) -> Filter) =
+                of(builderOf(graphName, description), ldapFilter)
 
         fun builderOf(name: String, description: String? = null): GraphQLArgument.Builder {
             return GraphQLArgument.newArgument()
