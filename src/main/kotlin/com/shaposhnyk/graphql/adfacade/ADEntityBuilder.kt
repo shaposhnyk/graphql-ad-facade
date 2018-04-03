@@ -130,7 +130,6 @@ class ADEntityBuilder(val ldap: LdapOperations, // ldap template
                         .defaultValue(100))
 
         val attributesToFilterOn = schema.findAttributesOfAClass(classInfo)
-
         schema.findAttributeSchemas(attributesToFilterOn, params.attrName, params.attributesToIgnore)
                 .flatMap { f -> createArgumentDefinition(f) }
                 .forEach { fieldBuilder.argument(it) }
@@ -161,6 +160,7 @@ class ADEntityBuilder(val ldap: LdapOperations, // ldap template
                         LessThanOrEqualsFilter(f, (env.arguments[f] as Int).toString())
                     })
         }
+        log.warn("Unknown attribute type for argument: {}", attrSchema)
         return emptyList()
     }
 
@@ -168,6 +168,10 @@ class ADEntityBuilder(val ldap: LdapOperations, // ldap template
      * Find fields from given class only
      */
     private fun createFieldDefinitions(attrSchema: LdapDataEntry): Set<GraphQLFieldDefinition> {
+        if (!fieldFactory.hasValidGraphName(attrSchema)) {
+            return emptySet()
+        }
+
         if ("TRUE" == attrSchema.getStringAttribute("isSingleValued")) {
             if (params.isBool(attrSchema)) {
                 return setOf(fieldFactory.boolDefinition(attrSchema))

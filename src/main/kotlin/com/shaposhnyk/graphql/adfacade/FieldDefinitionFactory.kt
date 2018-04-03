@@ -12,6 +12,11 @@ interface FieldDefinitionFactory {
      */
     fun requiredAttributes(env: DataFetchingEnvironment): Array<String>
 
+    /**
+     * @return true if attribute name is a valid graphql name
+     */
+    fun hasValidGraphName(attr: LdapDataEntry): Boolean
+
     fun listDefinition(attr: LdapDataEntry, graphName: String? = null): GraphQLFieldDefinition
     fun strDefinition(attr: LdapDataEntry, graphName: String? = null): GraphQLFieldDefinition
     fun intDefinition(attr: LdapDataEntry, graphName: String? = null): GraphQLFieldDefinition
@@ -22,6 +27,11 @@ interface FieldDefinitionFactory {
  * This factory does not allow field mapping. LDAP field MUST be mapped on GraphQL field with the same name
  */
 class SimpleFieldFactory(val params: ADParams) : FieldDefinitionFactory {
+
+    override fun hasValidGraphName(attr: LdapDataEntry): Boolean {
+        val name = attr.getStringAttribute(params.attrName)
+        return validNameRegex.matches(name)
+    }
 
     override fun requiredAttributes(env: DataFetchingEnvironment): Array<String> {
         return env.selectionSet.get().keys.toTypedArray()
@@ -71,5 +81,9 @@ class SimpleFieldFactory(val params: ADParams) : FieldDefinitionFactory {
     private fun defaultDefinition(attr: LdapDataEntry): GraphQLFieldDefinition.Builder {
         val name = attr.getStringAttribute(params.attrName)
         return defaultDefinition(attr, name)
+    }
+
+    companion object {
+        val validNameRegex = Regex("[_A-Za-z][_0-9A-Za-z]*")
     }
 }
