@@ -25,23 +25,23 @@ class Application {
     fun automaticSchema(ldap: LdapTemplate): GraphQLSchema {
         log.info("Building automatic initialSchema from cn=initialSchema,cn=configuration")
 
-        val person: IEntityFactory = ADEntityBuilder(ldap, "ou=people,dc=shaposhnyk,dc=com",
+        val person: IEntityFactoryK<Any> = ADEntityBuilder(ldap, "ou=people,dc=shaposhnyk,dc=com",
                 ldapClassName = "organizationalPerson", graphName = "person")
-        val room: IEntityFactory = ADEntityBuilder(ldap, "ou=rooms,dc=shaposhnyk,dc=com", "meetingRoom")
-        val group: IEntityFactory = ADEntityBuilder(ldap, "ou=groups,dc=shaposhnyk,dc=com", "group")
+        val room: IEntityFactoryK<Any> = ADEntityBuilder(ldap, "ou=rooms,dc=shaposhnyk,dc=com", "meetingRoom")
+        val group: IEntityFactoryK<Any> = ADEntityBuilder(ldap, "ou=groups,dc=shaposhnyk,dc=com", "group")
 
         val queryBuilder = GraphQLObjectType.newObject().name("Query")
-                .field(person.listFieldDefinition("searchPeople"))
-                .field(room.listFieldDefinition("searchMeetingRooms"))
-                .field(group.listFieldDefinition("searchGroups"))
+                .field(person.newListFieldDefinition("searchPeople"))
+                .field(room.newListFieldDefinition("searchMeetingRooms"))
+                .field(group.newListFieldDefinition("searchGroups"))
                 .description("Simple GraphQL Facade for Active Directory")
                 .build()
 
         val schema = GraphQLSchema.newSchema()
                 .query(queryBuilder)
-                .build(mutableSetOf(person.objectDefinition(),
-                        room.objectDefinition(),
-                        group.objectDefinition())
+                .build(mutableSetOf(person.objectDefinition,
+                        room.objectDefinition,
+                        group.objectDefinition)
                 )
         log.info("Schema built")
         return schema

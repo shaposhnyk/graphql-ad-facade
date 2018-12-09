@@ -37,7 +37,7 @@ class ADEntityBuilder(val ldap: LdapOperations, // ldap template
                       val graphName: String = ldapClassName, // GQL object name
                       val params: ADParams = defaultParams,
                       val additionalFilter: String? = null, // additional ldap filter
-                      private val initialSchema: IHierarichalSchemaAccessor? = null) : IEntityFactory {
+                      private val initialSchema: IHierarichalSchemaAccessor? = null) : IEntityFactoryK<Any> {
 
     val schema = initialSchema ?: LdapHierarchicalSchemaAccessor(LdapSchemaAccessor.cachingOf(ldap, base))
 
@@ -54,7 +54,7 @@ class ADEntityBuilder(val ldap: LdapOperations, // ldap template
     /**
      * Fetches list of objects
      */
-    override fun fetchList(env: DataFetchingEnvironment): Iterable<Any> {
+    override fun fetch(env: DataFetchingEnvironment): MutableIterable<Any> {
         val filter = createLdapFilter(env)
 
         val selectedAttributes = fieldFactory.requiredAttributes(env)
@@ -67,7 +67,7 @@ class ADEntityBuilder(val ldap: LdapOperations, // ldap template
         return ldap.search(base, filter.encode(), ctrls, ldapMapper)
     }
 
-    override fun objectDefinition(): GraphQLObjectType {
+    override fun getObjectDefinition(): GraphQLObjectType {
         // set of all attributeSchemas of all subClasses of current class
         val attrNames = attributeNamesToExpose()
 
@@ -101,7 +101,8 @@ class ADEntityBuilder(val ldap: LdapOperations, // ldap template
      * Creates LDAP Filter at runtime
      */
     private fun createLdapFilter(env: DataFetchingEnvironment): Filter {
-        if (env.arguments.isEmpty() || (env.arguments.size == 1 && "limit" in env.arguments)) {
+        if (env.arguments.isEmpty()
+                || (env.arguments.size == 1 && "limit" in env.arguments)) {
             return defaultFilter // return default filter if there is no filter arguments
         }
 
@@ -119,7 +120,7 @@ class ADEntityBuilder(val ldap: LdapOperations, // ldap template
         return filter
     }
 
-    override fun listFieldDefinition(fieldName: String, fetcher: (DataFetchingEnvironment) -> Any): GraphQLFieldDefinition.Builder {
+    override fun newListFieldDefinitionK(fieldName: String, fetcher: (DataFetchingEnvironment) -> Iterable<Any>): GraphQLFieldDefinition.Builder {
         val fieldBuilder = GraphQLFieldDefinition.newFieldDefinition()
                 .type(GraphQLList.list(GraphQLTypeReference(graphName)))
                 .name(fieldName)

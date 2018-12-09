@@ -12,9 +12,9 @@ class LdapSchemaAccessorTest {
     @Test
     fun getSchemaBaseWorksWithUpperAndLowerCase() {
         val schema1 = LdapSchemaAccessor.of(ldap, "ou=some,DC=shaposhnyk,DC=COM")
-        assertThat(schema1.schemaBase, equalTo("cn=initialSchema,cn=configuration,dc=shaposhnyk,dc=com"))
+        assertThat(schema1.schemaBase, equalTo("cn=Schema,cn=Configuration,dc=shaposhnyk,dc=com"))
 
         val schema2 = LdapSchemaAccessor.of(ldap, "ou=some,dc=Shaposhnyk,dc=com")
-        assertThat(schema2.schemaBase, equalTo("cn=initialSchema,cn=configuration,dc=shaposhnyk,dc=com"))
+        assertThat(schema2.schemaBase, equalTo("cn=Schema,cn=Configuration,dc=shaposhnyk,dc=com"))
     }
 }
